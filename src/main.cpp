@@ -1,25 +1,27 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <cstring>
-#include <unistd.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
+#include <iostream>       // for std::cout, std::cerr
+#include <fstream>        // for file reading (serving HTML files)
+#include <sstream>        // for string streams (building HTTP responses)
+#include <string>         // for std::string
+#include <cstring>        // for memset and C-string functions
+#include <unistd.h>       // for close(), read(), write()
+#include <netinet/in.h>   // for sockaddr_in, socket functions
+#include <sys/socket.h>   // for socket(), bind(), listen(), accept()
 
-const int PORT = 8080;
-const std::string ROOT_DIR = "./www";
+const int PORT = 8080;                      // The port number the server will listen on
+const std::string ROOT_DIR = "./www";       // Root folder to serve files from
 
+// This function builds and returns the full HTTP response based on the requested path
 std::string get_http_response(const std::string& path) {
-    std::string full_path = ROOT_DIR + path;
+    std::string full_path = ROOT_DIR + path; // Construct full path to requested file
 
-    // Default to index.html if path is "/"
+    // If root path is requested, serve index.html by default
     if (path == "/") {
         full_path = ROOT_DIR + "/index.html";
     }
 
-    std::ifstream file(full_path);
+    std::ifstream file(full_path);  // Open the requested file
     if (!file) {
+        // File doesn't exist — return 404 response
         std::string not_found =
             "HTTP/1.1 404 Not Found\r\n"
             "Content-Type: text/html\r\n"
@@ -28,52 +30,60 @@ std::string get_http_response(const std::string& path) {
         return not_found;
     }
 
+    // File found — read it into a buffer
     std::stringstream buffer;
-    buffer << file.rdbuf(); // read the whole file into buffer
-    std::string body = buffer.str();
+    buffer << file.rdbuf();            // Read entire file contents into buffer
+    std::string body = buffer.str();   // Convert buffer to string
 
+    // Build full HTTP response string
     std::stringstream response;
     response << "HTTP/1.1 200 OK\r\n";
     response << "Content-Type: text/html\r\n";
     response << "Content-Length: " << body.length() << "\r\n";
-    response << "\r\n";
+    response << "\r\n";                // Blank line between headers and body
     response << body;
 
-    return response.str();
+    return response.str();             // Return the full response string
 }
 
+// Parses the first line of the HTTP request to extract the path (e.g. "/about.html")
 std::string parse_request_path(const std::string& request) {
-    std::istringstream stream(request);
+    std::istringstream stream(request);     // Turn the request into a stream
     std::string method, path, version;
-    stream >> method >> path >> version;
+
+    stream >> method >> path >> version;    // Read the first line: e.g. "GET /index.html HTTP/1.1"
 
     if (method != "GET") {
-        return "/"; // just serve index.html for non-GET (we’ll improve this later)
+        return "/";                         // If it's not a GET, default to "/"
     }
 
-    return path;
+    return path;                            // Return the requested path
 }
 
 int main() {
-    int server_fd, client_fd;
-    struct sockaddr_in address;
-    socklen_t addrlen = sizeof(address);
+    int server_fd, client_fd;               // File descriptors for server and client sockets
+    struct sockaddr_in address;             // Struct for server address info
+    socklen_t addrlen = sizeof(address);    // Size of the address struct
 
+    // Create the socket: AF_INET = IPv4, SOCK_STREAM = TCP, 0 = default protocol
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == 0) {
-        perror("socket failed");
+        perror("socket failed");            // Print error if socket creation fails
         return 1;
     }
 
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
+    // Fill in server address information
+    address.sin_family = AF_INET;           // IPv4
+    address.sin_addr.s_addr = INADDR_ANY;   // Bind to all network interfaces
+    address.sin_port = htons(PORT);         // Convert port to network byte order
 
+    // Bind the socket to the specified IP and port
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
         perror("bind failed");
         return 1;
     }
 
+    // Start listening for connections (max 10 in queue)
     if (listen(server_fd, 10) < 0) {
         perror("listen failed");
         return 1;
@@ -81,25 +91,38 @@ int main() {
 
     std::cout << "Server listening on port " << PORT << std::endl;
 
+    // Main server loop — accepts and handles client connections one at a time
     while (true) {
+        // Accept an incoming client connection
         client_fd = accept(server_fd, (struct sockaddr*)&address, &addrlen);
         if (client_fd < 0) {
-            perror("accept failed");
+            perror("accept failed");         // Print error but keep server running
             continue;
         }
 
-        char buffer[4096] = {0};
+        // Buffer to hold the client's request
+        char buffer[4096] = {0};             // 4KB buffer, zero-initialized
+
+        // Read the request from the client socket into buffer
         read(client_fd, buffer, sizeof(buffer));
-        std::string request(buffer);
+
+        std::string request(buffer);         // Convert buffer into std::string for easier handling
         std::cout << "Request:\n" << request << std::endl;
 
+        // Parse the request path from the request
         std::string path = parse_request_path(request);
+
+        // Generate the appropriate HTTP response based on requested path
         std::string response = get_http_response(path);
 
+        // Send the response back to the client
         send(client_fd, response.c_str(), response.size(), 0);
+
+        // Close the connection to the client
         close(client_fd);
     }
 
+    // Clean up the server socket (technically unreachable due to infinite loop)
     close(server_fd);
     return 0;
 }
