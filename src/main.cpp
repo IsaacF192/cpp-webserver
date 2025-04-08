@@ -47,17 +47,23 @@ std::string get_http_response(const std::string& path) {
 }
 
 // Parses the first line of the HTTP request to extract the path (e.g. "/about.html")
-std::string parse_request_path(const std::string& request) {
-    std::istringstream stream(request);     // Turn the request into a stream
-    std::string method, path, version;
+std::string parse_request_path(const std::string& request, std::string& method, std::string& body) {
+    std::istringstream stream(request);
+    std::string line;
 
-    stream >> method >> path >> version;    // Read the first line: e.g. "GET /index.html HTTP/1.1"
+    // First line looks like: POST /submit HTTP/1.1
+    stream >> method;
 
-    if (method != "GET") {
-        return "/";                         // If it's not a GET, default to "/"
+    std::string path;
+    stream >> path;
+
+    // The request body comes after the empty line ("\r\n\r\n")
+    size_t pos = request.find("\r\n\r\n");
+    if (pos != std::string::npos) {
+        body = request.substr(pos + 4); // skip past the blank line
     }
 
-    return path;                            // Return the requested path
+    return path;                      // Return the requested path
 }
 
 int main() {
@@ -110,11 +116,35 @@ int main() {
         std::cout << "Request:\n" << request << std::endl;
 
         // Parse the request path from the request
-        std::string path = parse_request_path(request);
+        std::string method, body;
+std::string path = parse_request_path(request, method, body);
+std::string response;
 
-        // Generate the appropriate HTTP response based on requested path
-        std::string response = get_http_response(path);
+if (method == "GET") {
+    response = get_http_response(path);
+    
+    } else if (method == "POST" && path == "/submit") 
+    
+    {
+    // Save form submission to a file
+    std::ofstream file("submissions.txt", std::ios::app);
+    if (file) {
+        file << body << "\n---\n";
+    }
 
+    response =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "\r\n"
+        "<h1>Thanks for your submission!</h1>";
+        } else {
+    response =
+        "HTTP/1.1 400 Bad Request\r\n"
+        "Content-Type: text/html\r\n"
+        "\r\n"
+        "<h1>400 Bad Request</h1>";
+        
+        }
         // Send the response back to the client
         send(client_fd, response.c_str(), response.size(), 0);
 
