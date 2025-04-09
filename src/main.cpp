@@ -11,10 +11,6 @@ const int PORT = 8080;                      // The port number the server will l
 const std::string ROOT_DIR = "./www";       // Root folder to serve files from
 
 // This function builds and returns the full HTTP response based on the requested path
-
-
-
-
 std::string get_http_response(const std::string& path) {
     std::string full_path = ROOT_DIR + path; // Construct full path to requested file
 
@@ -26,11 +22,12 @@ std::string get_http_response(const std::string& path) {
     std::ifstream file(full_path);  // Open the requested file
     if (!file) {
         // File doesn't exist — return 404 response
-       
-       
-        HttpResponse res(404, "<h1>404 Not Found</h1>");
-        return res.to_string();
-
+        std::string not_found =
+            "HTTP/1.1 404 Not Found\r\n"
+            "Content-Type: text/html\r\n"
+            "\r\n"
+            "<h1>404 Not Found</h1>";
+        return not_found;
     }
 
     // File found — read it into a buffer
@@ -39,16 +36,15 @@ std::string get_http_response(const std::string& path) {
     std::string body = buffer.str();   // Convert buffer to string
 
     // Build full HTTP response string
-   HttpResponse res(200, body);
-    return res.to_string();      // Return the full response string
+    std::stringstream response;
+    response << "HTTP/1.1 200 OK\r\n";
+    response << "Content-Type: text/html\r\n";
+    response << "Content-Length: " << body.length() << "\r\n";
+    response << "\r\n";                // Blank line between headers and body
+    response << body;
+
+    return response.str();             // Return the full response string
 }
-
-
-
-
-
-
-
 
 // Parses the first line of the HTTP request to extract the path (e.g. "/about.html")
 std::string parse_request_path(const std::string& request, std::string& method, std::string& body) {
