@@ -66,6 +66,23 @@ std::string parse_request_path(const std::string& request, std::string& method, 
     return path;                      // Return the requested path
 }
 
+
+std::string decode_form_value(const std::string& body) {
+    std::string key = "message=";
+    size_t pos = body.find(key);
+    if (pos == std::string::npos) return "[empty]";
+
+    std::string value = body.substr(pos + key.length());
+
+    // Replace '+' with space (basic decoding)
+    for (size_t i = 0; i < value.length(); ++i) {
+        if (value[i] == '+') value[i] = ' ';
+    }
+
+    return value;
+}
+
+
 int main() {
     int server_fd, client_fd;               // File descriptors for server and client sockets
     struct sockaddr_in address;             // Struct for server address info
@@ -123,13 +140,12 @@ std::string response;
 if (method == "GET") {
     response = get_http_response(path);
     
-    } else if (method == "POST" && path == "/submit") 
-    
-    {
-    // Save form submission to a file
+    } else if (method == "POST" && path == "/submit") {
+    std::string clean_message = decode_form_value(body);
+
     std::ofstream file("submissions.txt", std::ios::app);
     if (file) {
-        file << body << "\n---\n";
+        file << clean_message << "\n---\n";
     }
 
     response =
