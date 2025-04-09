@@ -159,6 +159,117 @@ public:
 
 
 
+// HttpServer class: handles listening, accepting connections, and serving responses
+class HttpServer {
+public:
+    HttpServer(int port) : port(port) {
+        setup_socket();
+    }
+
+    ~HttpServer() {
+        // RAII: automatically close server socket on destruction
+        if (server_fd >= 0) {
+            close(server_fd);
+            std::cout << "Server socket closed." << std::endl;
+        }
+    }
+
+    // Main server loop: accepts requests and returns responses
+    void run() {
+        Logger logger("server.log"); // Log to server.log
+        std::cout << "Server listening on port " << port << "..." << std::endl;
+        logger.log(Logger::INFO, "Server started on port " + std::to_string(port));
+
+        while (true) {
+            int client_fd = accept(server_fd, nullptr, nullptr);
+            if (client_fd < 0) {
+                logger.log(Logger::ERROR, "accept() failed");
+                continue;
+            }
+
+            char buffer[4096] = {0};
+            read(client_fd, buffer, sizeof(buffer));
+
+            HttpRequest req(buffer);  // Parse the raw HTTP request
+            logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
+
+            std::string response;
+
+            if (req.method == "GET") {
+                // Try to open the requested file
+                std::string full_path = ROOT_DIR + (req.path == "/" ? "/index.html" : req.path);
+                std::ifstream file(full_path);
+
+                if (!file) {
+                    logger.log(Logger::ERROR, "File not found: " + req.path);
+                    HttpResponse res(404, "<h1>404 Not Found</h1>");
+                    response = res.to_string();
+                } else {
+                    std::stringstream buffer;
+                    buffer << file.rdbuf();
+                    HttpResponse res(200, buffer.str());
+                    response = res.to_string();
+                }
+            }
+            else if (req.method == "POST" && req.path == "/submit") {
+                std::string clean_message = decode_form_value(req.body);
+
+                std::ofstream file("submissions.txt", std::ios::app);
+                if (file) {
+                    file << clean_message << "\n---\n";
+                }
+
+                logger.log(Logger::INFO, "Form submitted with message: " + clean_message);
+
+                HttpResponse res(200, "<h1>Thanks for your submission!</h1>");
+                response = res.to_string();
+            }
+            else {
+                logger.log(Logger::WARNING, "Unsupported request: " + req.method + " " + req.path);
+                HttpResponse res(400, "<h1>400 Bad Request</h1>");
+                response = res.to_string();
+            }
+
+            send(client_fd, response.c_str(), response.size(), 0);
+            close(client_fd); // Close connection to the client
+        }
+    }
+
+private:
+    int server_fd = -1;
+    int port;
+
+    void setup_socket() {
+        server_fd = socket(AF_INET, SOCK_STREAM, 0);
+        if (server_fd == 0) {
+            perror("socket failed");
+            exit(EXIT_FAILURE);
+        }
+
+        sockaddr_in address{};
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = INADDR_ANY;
+        address.sin_port = htons(port);
+
+        if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+            perror("bind failed");
+            exit(EXIT_FAILURE);
+        }
+
+        if (listen(server_fd, 10) < 0) {
+            perror("listen failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+};
+
+
+
+
+
+
+
+
 
 
 
@@ -167,6 +278,18 @@ public:
 
 
 int main() {
+
+    HttpServer server(8080);  // Create server on port 8080
+    server.run();             // Start accepting requests
+    return 0;
+
+
+
+
+
+
+
+
     int server_fd, client_fd;               // File descriptors for server and client sockets
     struct sockaddr_in address;             // Struct for server address info
     socklen_t addrlen = sizeof(address);    // Size of the address struct
