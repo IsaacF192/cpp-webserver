@@ -11,6 +11,10 @@ const int PORT = 8080;                      // The port number the server will l
 const std::string ROOT_DIR = "./www";       // Root folder to serve files from
 
 // This function builds and returns the full HTTP response based on the requested path
+
+
+
+
 std::string get_http_response(const std::string& path) {
     std::string full_path = ROOT_DIR + path; // Construct full path to requested file
 
@@ -22,12 +26,11 @@ std::string get_http_response(const std::string& path) {
     std::ifstream file(full_path);  // Open the requested file
     if (!file) {
         // File doesn't exist — return 404 response
-        std::string not_found =
-            "HTTP/1.1 404 Not Found\r\n"
-            "Content-Type: text/html\r\n"
-            "\r\n"
-            "<h1>404 Not Found</h1>";
-        return not_found;
+       
+       
+        HttpResponse res(404, "<h1>404 Not Found</h1>");
+        return res.to_string();
+
     }
 
     // File found — read it into a buffer
@@ -36,15 +39,16 @@ std::string get_http_response(const std::string& path) {
     std::string body = buffer.str();   // Convert buffer to string
 
     // Build full HTTP response string
-    std::stringstream response;
-    response << "HTTP/1.1 200 OK\r\n";
-    response << "Content-Type: text/html\r\n";
-    response << "Content-Length: " << body.length() << "\r\n";
-    response << "\r\n";                // Blank line between headers and body
-    response << body;
-
-    return response.str();             // Return the full response string
+   HttpResponse res(200, body);
+    return res.to_string();      // Return the full response string
 }
+
+
+
+
+
+
+
 
 // Parses the first line of the HTTP request to extract the path (e.g. "/about.html")
 std::string parse_request_path(const std::string& request, std::string& method, std::string& body) {
@@ -81,6 +85,89 @@ std::string decode_form_value(const std::string& body) {
 
     return value;
 }
+
+
+
+class HttpRequest {
+public:
+    std::string method;
+    std::string path;
+    std::string body;
+
+    // Constructor that takes in the raw request string
+    HttpRequest(const std::string& raw_request) {
+        parse(raw_request);
+    }
+
+private:
+    void parse(const std::string& request) {
+        std::istringstream stream(request);
+
+        // Parse first line: e.g. "GET /index.html HTTP/1.1"
+        stream >> method >> path;
+
+        // Find start of body (after blank line)
+        size_t pos = request.find("\r\n\r\n");
+        if (pos != std::string::npos) {
+            body = request.substr(pos + 4);  // Body starts after \r\n\r\n
+        }
+    }
+};
+
+
+// Class to represent and build an HTTP response
+
+class HttpResponse {
+public:
+    int status_code;
+    std::string status_text;
+    std::string content_type = "text/html"; // Default content type
+    std::string body;
+
+    // Constructor: takes status code and optional body
+    HttpResponse(int code, const std::string& body_content)
+        : status_code(code), body(body_content) {
+        set_status_text();  // Set default status text like "OK" or "Not Found"
+    }
+
+    // Build the full HTTP response string
+    
+    std::string to_string() const {
+        std::stringstream response;
+
+        // Status line
+        response << "HTTP/1.1 " << status_code << " " << status_text << "\r\n";
+
+        // Headers
+        response << "Content-Type: " << content_type << "\r\n";
+        response << "Content-Length: " << body.size() << "\r\n";
+        response << "\r\n";
+
+        // Body
+        response << body;
+
+        return response.str();
+    }
+    
+    private:
+    void set_status_text() {
+        // Set default status text based on code
+        if (status_code == 200) status_text = "OK";
+        else if (status_code == 404) status_text = "Not Found";
+        else if (status_code == 400) status_text = "Bad Request";
+        else status_text = "Unknown";
+    }
+};
+
+
+
+
+
+
+
+
+
+
 
 
 int main() {
@@ -133,8 +220,14 @@ int main() {
         std::cout << "Request:\n" << request << std::endl;
 
         // Parse the request path from the request
-        std::string method, body;
-std::string path = parse_request_path(request, method, body);
+        
+        HttpRequest req(request);  // Create HttpRequest instance and parse
+        std::string method = req.method;
+        std::string path = req.path;
+        std::string body = req.body;
+
+
+
 std::string response;
 
 if (method == "GET") {
@@ -148,11 +241,12 @@ if (method == "GET") {
         file << clean_message << "\n---\n";
     }
 
-    response =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "\r\n"
-        "<h1>Thanks for your submission!</h1>";
+    
+    HttpResponse res(200, "<h1>Thanks for your submission!</h1>");
+    
+    response = res.to_string();
+
+
         } else {
     response =
         "HTTP/1.1 400 Bad Request\r\n"
