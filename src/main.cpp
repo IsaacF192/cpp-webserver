@@ -6,6 +6,7 @@
 #include <unistd.h>       // for close(), read(), write()
 #include <netinet/in.h>   // for sockaddr_in, socket functions
 #include <sys/socket.h>   // for socket(), bind(), listen(), accept()
+#include "logger.h"
 
 const int PORT = 8080;                      // The port number the server will listen on
 const std::string ROOT_DIR = "./www";       // Root folder to serve files from
@@ -47,7 +48,8 @@ std::string get_http_response(const std::string& path) {
 }
 
 // Parses the first line of the HTTP request to extract the path (e.g. "/about.html")
-std::string parse_request_path(const std::string& request, std::string& method, std::string& body) {
+std::string parse_request_path(const std::string& request, std::string& method, std::string& body) 
+{
     std::istringstream stream(request);
     std::string line;
 
@@ -196,6 +198,35 @@ public:
             std::string response;
 
             if (req.method == "GET") {
+
+                // 🔐 Check for directory traversal attempt in the requested path
+                
+                if (req.path.find("..") != std::string::npos) {
+                    
+                    // 🚨 Log an error if the path contains "..", which is a potential security risk
+                    logger.log(Logger::ERROR, "Blocked path traversal attempt: " + req.path);
+
+                     // 🛑 Create a 403 Forbidden response because the request is unsafe
+                    HttpResponse res(403, "<h1>403 Forbidden</h1>");
+
+                     // 📦 Convert the HttpResponse to a full HTTP-formatted string
+                    response = res.to_string();
+
+                     // 📤 Send the response back to the client
+                    send(client_fd, response.c_str(), response.size(), 0);
+
+                     // 🔒 Close the connection to the client to end the request
+                    close(client_fd);
+
+
+                     // 🔁 Skip the rest of the loop and wait for the next client connection
+                     continue;
+                     
+                     }
+
+                     
+
+
                 // Try to open the requested file
                 std::string full_path = ROOT_DIR + (req.path == "/" ? "/index.html" : req.path);
                 std::ifstream file(full_path);
