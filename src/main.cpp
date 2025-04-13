@@ -85,6 +85,47 @@ std::string decode_form_value(const std::string& body) {
 }
 
 
+// Helper function to decode URL-encoded strings (e.g. %2E%2E → ..)
+std::string url_decode(const std::string& input) {
+    std::string result;  // Stores the decoded output
+    char ch;             // Holds the decoded character
+    int i, ii;           // 'i' is the loop index, 'ii' holds the hex value
+
+    // Loop through each character in the input string
+    for (i = 0; i < input.length(); i++) {
+        // If the current character is '%' (URL encoding indicator)
+        if (int(input[i]) == 37) { // 37 is ASCII for '%'
+            // Get the two characters following '%', convert from hex to int
+            sscanf(input.substr(i + 1, 2).c_str(), "%x", &ii);
+
+            // Cast the int to a char and add it to the result
+            ch = static_cast<char>(ii);
+            result += ch;
+
+            // Skip the two characters we just processed
+            i = i + 2;
+        } else {
+            // If it's not a '%', just add the character as-is
+            result += input[i];
+        }
+    }
+
+    // Return the fully decoded string
+    return result;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class HttpRequest {
 public:
@@ -111,6 +152,9 @@ private:
         }
     }
 };
+
+
+
 
 
 // Class to represent and build an HTTP response
@@ -193,6 +237,17 @@ public:
             read(client_fd, buffer, sizeof(buffer));
 
             HttpRequest req(buffer);  // Parse the raw HTTP request
+
+            // Decode any URL-encoded characters in the path (e.g. %2E%2E → ..)
+            // This prevents encoded directory traversal attacks from slipping past validation
+            // For example, a browser might encode "../../etc/passwd" as "%2E%2E/%2E%2E/etc/passwd"
+            // Without decoding, our ".." check would miss it — so we decode first
+            req.path = url_decode(req.path);
+
+
+
+
+
             logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
 
             std::string response;
@@ -224,7 +279,7 @@ public:
                      
                      }
 
-                     
+
 
 
                 // Try to open the requested file
