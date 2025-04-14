@@ -295,6 +295,8 @@ private:
     
     
     req.path = url_decode(req.path);   // Decode %2E%2E and other encoded path parts
+    std::string response;  // This will hold the final HTTP response
+
     if (req.path.find("..") != std::string::npos) {
             logger.log(Logger::ERROR, "Blocked path traversal attempt: " + req.path);
             HttpResponse res(403, "<h1>403 Forbidden</h1>");
@@ -312,7 +314,7 @@ private:
 
     logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
 
-    std::string response;  // This will hold the final HTTP response
+    //std::string response;  // This will hold the final HTTP response
 
     
     
