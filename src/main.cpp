@@ -8,6 +8,7 @@
 #include <sys/socket.h>   // for socket(), bind(), listen(), accept()
 #include "logger.h"
 #include <thread> // for std::thread
+#include <chrono> // to simulate a slow response or delay, to test how the server works concurrency 
 
 const int PORT = 8080;                      // The port number the server will listen on
 const std::string ROOT_DIR = "./www";       // Root folder to serve files from
@@ -325,7 +326,12 @@ private:
             HttpResponse res(200, buffer.str());  // Create 200 OK response
             response = res.to_string();
         }
+
+        std::this_thread::sleep_for(std::chrono::seconds(5));  // Simulates slow responses or delay
     }
+
+
+
 
     // Handle POST request for form submission
     else if (req.method == "POST" && req.path == "/submit") {
