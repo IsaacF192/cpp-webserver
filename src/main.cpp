@@ -6,7 +6,8 @@
 #include <unistd.h>       // for close(), read(), write()
 #include <netinet/in.h>   // for sockaddr_in, socket functions
 #include <sys/socket.h>   // for socket(), bind(), listen(), accept()
-#include "logger.h"
+#include <logger.h>
+#include <thread> // for std::thread
 
 const int PORT = 8080;                      // The port number the server will listen on
 const std::string ROOT_DIR = "./www";       // Root folder to serve files from
@@ -22,7 +23,7 @@ std::string get_http_response(const std::string& path) {
 
     std::ifstream file(full_path);  // Open the requested file
     if (!file) {
-        // File doesn't exist — return 404 response
+        // File doesn't exist return 404 response
         std::string not_found =
             "HTTP/1.1 404 Not Found\r\n"
             "Content-Type: text/html\r\n"
@@ -31,7 +32,7 @@ std::string get_http_response(const std::string& path) {
         return not_found;
     }
 
-    // File found — read it into a buffer
+    // File found read it into a buffer
     std::stringstream buffer;
     buffer << file.rdbuf();            // Read entire file contents into buffer
     std::string body = buffer.str();   // Convert buffer to string
@@ -85,7 +86,7 @@ std::string decode_form_value(const std::string& body) {
 }
 
 
-// Helper function to decode URL-encoded strings (e.g. %2E%2E → ..)
+// Helper function to decode URL-encoded strings (e.g. %2E%2E ..)
 std::string url_decode(const std::string& input) {
     std::string result;  // Stores the decoded output
     char ch;             // Holds the decoded character
@@ -212,7 +213,10 @@ public:
         setup_socket();
     }
 
-    ~HttpServer() {
+
+
+
+~HttpServer() {
         // RAII: automatically close server socket on destruction
         if (server_fd >= 0) {
             close(server_fd);
@@ -222,100 +226,30 @@ public:
 
     // Main server loop: accepts requests and returns responses
     void run() {
+        
         Logger logger("server.log"); // Log to server.log
         std::cout << "Server listening on port " << port << "..." << std::endl;
         logger.log(Logger::INFO, "Server started on port " + std::to_string(port));
 
-        while (true) {
-            int client_fd = accept(server_fd, nullptr, nullptr);
-            if (client_fd < 0) {
-                logger.log(Logger::ERROR, "accept() failed");
-                continue;
-            }
-
-            char buffer[4096] = {0};
-            read(client_fd, buffer, sizeof(buffer));
-
-            HttpRequest req(buffer);  // Parse the raw HTTP request
-
-            // Decode any URL-encoded characters in the path (e.g. %2E%2E → ..)
-            // This prevents encoded directory traversal attacks from slipping past validation
-            // For example, a browser might encode "../../etc/passwd" as "%2E%2E/%2E%2E/etc/passwd"
-            // Without decoding, our ".." check would miss it — so we decode first
-            req.path = url_decode(req.path);
-            
-            logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
-
-            std::string response;
-
-            if (req.method == "GET") {
-
-                // 🔐 Check for directory traversal attempt in the requested path
-                
-                if (req.path.find("..") != std::string::npos) {
-                    
-                    // 🚨 Log an error if the path contains "..", which is a potential security risk
-                    logger.log(Logger::ERROR, "Blocked path traversal attempt: " + req.path);
-
-                     // 🛑 Create a 403 Forbidden response because the request is unsafe
-                    HttpResponse res(403, "<h1>403 Forbidden</h1>");
-
-                     // 📦 Convert the HttpResponse to a full HTTP-formatted string
-                    response = res.to_string();
-
-                     // 📤 Send the response back to the client
-                    send(client_fd, response.c_str(), response.size(), 0);
-
-                     // 🔒 Close the connection to the client to end the request
-                    close(client_fd);
-
-
-                     // 🔁 Skip the rest of the loop and wait for the next client connection
-                     continue;
-                     
-                     }
-
-
-
-
-                // Try to open the requested file
-                std::string full_path = ROOT_DIR + (req.path == "/" ? "/index.html" : req.path);
-                std::ifstream file(full_path);
-
-                if (!file) {
-                    logger.log(Logger::ERROR, "File not found: " + req.path);
-                    HttpResponse res(404, "<h1>404 Not Found</h1>");
-                    response = res.to_string();
-                } else {
-                    std::stringstream buffer;
-                    buffer << file.rdbuf();
-                    HttpResponse res(200, buffer.str());
-                    response = res.to_string();
-                }
-            }
-            else if (req.method == "POST" && req.path == "/submit") {
-                std::string clean_message = decode_form_value(req.body);
-
-                std::ofstream file("submissions.txt", std::ios::app);
-                if (file) {
-                    file << clean_message << "\n---\n";
-                }
-
-                logger.log(Logger::INFO, "Form submitted with message: " + clean_message);
-
-                HttpResponse res(200, "<h1>Thanks for your submission!</h1>");
-                response = res.to_string();
-            }
-            else {
-                logger.log(Logger::WARNING, "Unsupported request: " + req.method + " " + req.path);
-                HttpResponse res(400, "<h1>400 Bad Request</h1>");
-                response = res.to_string();
-            }
-
-            send(client_fd, response.c_str(), response.size(), 0);
-            close(client_fd); // Close connection to the client
-        }
+        while (true){
+    //Accept a new client connection (blocks until a client connects)
+    int client_fd = accept(server_fd, nullptr, nullptr);
+    if (client_fd < 0) {
+        logger.log(Logger::ERROR, "accept() failed");  // Log failure to accept
+        continue;  // Try again
     }
+
+    //Start a new thread to handle the client
+    std::thread client_thread(&HttpServer::handle_client, this, client_fd);
+
+    //Detach the thread so it runs independently and cleans up on its own
+    client_thread.detach();
+    }
+
+
+}
+
+
 
 private:
     int server_fd = -1;
@@ -343,14 +277,82 @@ private:
             exit(EXIT_FAILURE);
         }
     }
+    
+    
+    // This method handles a single client connection.
+    // It's exactly the logic that used to live in the `run()` method.
+    // It gets called from a new thread for each client.
+    
+    
+    void handle_client(int client_fd) {
+    Logger logger("server.log");  // Create a logger for this request/thread
+
+    char buffer[4096] = {0};  // Create a buffer to store the client's request
+    read(client_fd, buffer, sizeof(buffer));  // Read the raw request from the socket
+
+    HttpRequest req(buffer);           // Parse method, path, body
+    req.path = url_decode(req.path);   // Decode %2E%2E and other encoded path parts
+
+    logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
+
+    std::string response;  // This will hold the final HTTP response
+
+    //Handle GET requests
+    if (req.method == "GET") {
+        // Security: prevent directory traversal (e.g., "../etc/passwd")
+        if (req.path.find("..") != std::string::npos) {
+            logger.log(Logger::ERROR, "Blocked path traversal attempt: " + req.path);
+            HttpResponse res(403, "<h1>403 Forbidden</h1>");
+            response = res.to_string();
+            send(client_fd, response.c_str(), response.size(), 0);
+            close(client_fd);
+            return;  // Stop processing this request
+        }
+
+        // Build full path to the requested file
+        std::string full_path = ROOT_DIR + (req.path == "/" ? "/index.html" : req.path);
+        std::ifstream file(full_path);  // Try to open the file
+
+        if (!file) {
+            //File not found return 404
+            logger.log(Logger::ERROR, "File not found: " + req.path);
+            HttpResponse res(404, "<h1>404 Not Found</h1>");
+            response = res.to_string();
+        } else {
+            //File found load contents into response
+            std::stringstream buffer;
+            buffer << file.rdbuf();  // Read entire file into buffer
+            HttpResponse res(200, buffer.str());  // Create 200 OK response
+            response = res.to_string();
+        }
+    }
+
+    // Handle POST request for form submission
+    else if (req.method == "POST" && req.path == "/submit") {
+        std::string clean_message = decode_form_value(req.body);  // Extract and clean form data
+        std::ofstream file("submissions.txt", std::ios::app);     // Open file in append mode
+        if (file) {
+            file << clean_message << "\n---\n";  // Store the message
+        }
+
+        logger.log(Logger::INFO, "Form submitted with message: " + clean_message);
+        HttpResponse res(200, "<h1>Thanks for your submission!</h1>");
+        response = res.to_string();
+    }
+
+    // Handle unsupported methods or invalid paths
+    else {
+        logger.log(Logger::WARNING, "Unsupported request: " + req.method + " " + req.path);
+        HttpResponse res(400, "<h1>400 Bad Request</h1>");
+        response = res.to_string();
+    }
+
+    // Send the response and close the connection
+    send(client_fd, response.c_str(), response.size(), 0);
+    close(client_fd);  // Always close the client socket after responding
+}
+
 };
-
-
-
-
-
-
-
 
 
 
