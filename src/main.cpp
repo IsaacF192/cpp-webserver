@@ -243,11 +243,7 @@ public:
             // For example, a browser might encode "../../etc/passwd" as "%2E%2E/%2E%2E/etc/passwd"
             // Without decoding, our ".." check would miss it — so we decode first
             req.path = url_decode(req.path);
-
-
-
-
-
+            
             logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
 
             std::string response;
@@ -369,105 +365,4 @@ int main() {
     server.run();             // Start accepting requests
     return 0;
 
-
-
-
-
-
-
-
-    int server_fd, client_fd;               // File descriptors for server and client sockets
-    struct sockaddr_in address;             // Struct for server address info
-    socklen_t addrlen = sizeof(address);    // Size of the address struct
-
-    // Create the socket: AF_INET = IPv4, SOCK_STREAM = TCP, 0 = default protocol
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd == 0) {
-        perror("socket failed");            // Print error if socket creation fails
-        return 1;
-    }
-
-    // Fill in server address information
-    address.sin_family = AF_INET;           // IPv4
-    address.sin_addr.s_addr = INADDR_ANY;   // Bind to all network interfaces
-    address.sin_port = htons(PORT);         // Convert port to network byte order
-
-    // Bind the socket to the specified IP and port
-    if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        perror("bind failed");
-        return 1;
-    }
-
-    // Start listening for connections (max 10 in queue)
-    if (listen(server_fd, 10) < 0) {
-        perror("listen failed");
-        return 1;
-    }
-
-    std::cout << "Server listening on port " << PORT << std::endl;
-
-    // Main server loop — accepts and handles client connections one at a time
-    while (true) {
-        // Accept an incoming client connection
-        client_fd = accept(server_fd, (struct sockaddr*)&address, &addrlen);
-        if (client_fd < 0) {
-            perror("accept failed");         // Print error but keep server running
-            continue;
-        }
-
-        // Buffer to hold the client's request
-        char buffer[4096] = {0};             // 4KB buffer, zero-initialized
-
-        // Read the request from the client socket into buffer
-        read(client_fd, buffer, sizeof(buffer));
-
-        std::string request(buffer);         // Convert buffer into std::string for easier handling
-        std::cout << "Request:\n" << request << std::endl;
-
-        // Parse the request path from the request
-        
-        HttpRequest req(request);  // Create HttpRequest instance and parse
-        std::string method = req.method;
-        std::string path = req.path;
-        std::string body = req.body;
-
-
-
-std::string response;
-
-if (method == "GET") {
-    response = get_http_response(path);
-    
-    } else if (method == "POST" && path == "/submit") {
-    std::string clean_message = decode_form_value(body);
-
-    std::ofstream file("submissions.txt", std::ios::app);
-    if (file) {
-        file << clean_message << "\n---\n";
-    }
-
-    
-    HttpResponse res(200, "<h1>Thanks for your submission!</h1>");
-    
-    response = res.to_string();
-
-
-        } else {
-    response =
-        "HTTP/1.1 400 Bad Request\r\n"
-        "Content-Type: text/html\r\n"
-        "\r\n"
-        "<h1>400 Bad Request</h1>";
-        
-        }
-        // Send the response back to the client
-        send(client_fd, response.c_str(), response.size(), 0);
-
-        // Close the connection to the client
-        close(client_fd);
-    }
-
-    // Clean up the server socket (technically unreachable due to infinite loop)
-    close(server_fd);
-    return 0;
 }
