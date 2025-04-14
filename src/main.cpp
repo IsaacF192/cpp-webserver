@@ -292,16 +292,10 @@ private:
     read(client_fd, buffer, sizeof(buffer));  // Read the raw request from the socket
 
     HttpRequest req(buffer);           // Parse method, path, body
+    
+    
     req.path = url_decode(req.path);   // Decode %2E%2E and other encoded path parts
-
-    logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
-
-    std::string response;  // This will hold the final HTTP response
-
-    //Handle GET requests
-    if (req.method == "GET") {
-        // Security: prevent directory traversal (e.g., "../etc/passwd")
-        if (req.path.find("..") != std::string::npos) {
+    if (req.path.find("..") != std::string::npos) {
             logger.log(Logger::ERROR, "Blocked path traversal attempt: " + req.path);
             HttpResponse res(403, "<h1>403 Forbidden</h1>");
             response = res.to_string();
@@ -309,6 +303,22 @@ private:
             close(client_fd);
             return;  // Stop processing this request
         }
+
+
+
+
+
+    
+
+    logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
+
+    std::string response;  // This will hold the final HTTP response
+
+    
+    
+    //Handle GET requests
+    if (req.method == "GET") {
+        // Security: prevent directory traversal (e.g., "../etc/passwd")
 
         // Build full path to the requested file
         std::string full_path = ROOT_DIR + (req.path == "/" ? "/index.html" : req.path);
@@ -329,11 +339,8 @@ private:
 
         //std::this_thread::sleep_for(std::chrono::seconds(5));  // Simulates slow responses or delay
     }
-
-
-
-
-    // Handle POST request for form submission
+    
+     // Handle POST request for form submission
     else if (req.method == "POST" && req.path == "/submit") {
         std::string clean_message = decode_form_value(req.body);  // Extract and clean form data
         std::ofstream file("submissions.txt", std::ios::app);     // Open file in append mode
