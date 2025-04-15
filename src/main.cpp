@@ -317,44 +317,50 @@ private:
 
     logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
 
-    //std::string response;  // This will hold the final HTTP response
-
     
     
     //Handle GET requests
-    if (req.method == "GET") {
+    if (req.path == "/messages.html") {
+    std::ifstream file("submissions.txt");        // Try to open the stored submissions
+    std::stringstream content;                    // Used to build the HTML response
 
-        if (req.path == "/messages.html") {
-            
-            
-            std::ifstream file("submissions.txt");       // Try to read the saved submissions
-            std::stringstream content;                   // Buffer for building HTML page
-            
-            content << "<html><body>";                   // Start of HTML
-            content << "<h1>Submitted Messages</h1>";    // Heading
-            content << "<pre>";                          // Preserve spacing
-            
-            if (file) {
-                
-                content << file.rdbuf();            // Append file contents
-                
-                } else {
-                    
-                    content << "No messages yet.";      // Fallback if file doesn't exist
-                    
-                    }
-                    
-            content << "</pre>";
-            content << "</body></html>";
-            
-            HttpResponse res(200, content.str());        // Wrap the content in a valid HTTP response
-            response = res.to_string();
-            
-            send(client_fd, response.c_str(), response.size(), 0); // Send to browser
-            close(client_fd);
-            
-            return; // Exit early (skip file serving)
+    // Start HTML document
+    content << "<!DOCTYPE html><html><head><title>Messages</title>";
+    content << "<style>";
+    content << "body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }";
+    content << ".msg { background: white; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; white-space: pre-wrap; }";
+    content << "</style>";
+    content << "</head><body>";
+    content << "<h1>Submitted Messages</h1>";
+
+    // Loop through file and wrap each message in a div
+    std::string line;
+    std::string message;
+
+    while (std::getline(file, line)) {
+        if (line == "---") {
+            // End of a message wrap and reset
+            content << "<div class='msg'>" << message << "</div>";
+            message.clear();
+        } else {
+            message += line + "\n";  // Add line to current message
+        }
+    }
+
+    // Catch any trailing message without ---
+    if (!message.empty()) {
+        content << "<div class='msg'>" << message << "</div>";
+    }
+
+    content << "</body></html>";
+
+    HttpResponse res(200, content.str());         // Build HTTP response
+    response = res.to_string();
+    send(client_fd, response.c_str(), response.size(), 0);
+    close(client_fd);
+    return;
 }
+
 
 // Security: prevent directory traversal (e.g., "../etc/passwd")
 
