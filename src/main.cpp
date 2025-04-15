@@ -333,7 +333,17 @@ private:
             content << "<html><body>";                   // Start of HTML
             content << "<h1>Submitted Messages</h1>";    // Heading
             content << "<pre>";                          // Preserve spacing
-            content << (file ? file.rdbuf() : std::stringstream("No messages yet.")); // Dump file contents
+            
+            if (file) {
+                
+                content << file.rdbuf();            // Append file contents
+                
+                } else {
+                    
+                    content << "No messages yet.";      // Fallback if file doesn't exist
+                    
+                    }
+                    
             content << "</pre>";
             content << "</body></html>";
             
