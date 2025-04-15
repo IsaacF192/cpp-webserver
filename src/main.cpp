@@ -10,6 +10,9 @@
 #include <thread> // for std::thread
 //#include <chrono> // to simulate a slow response or delay, to test how the server works concurrency 
 
+
+
+
 const int PORT = 8080;                      // The port number the server will listen on
 const std::string ROOT_DIR = "./www";       // Root folder to serve files from
 
@@ -320,7 +323,30 @@ private:
     
     //Handle GET requests
     if (req.method == "GET") {
-        // Security: prevent directory traversal (e.g., "../etc/passwd")
+
+        if (req.path == "/messages.html") {
+            
+            
+            std::ifstream file("submissions.txt");       // Try to read the saved submissions
+            std::stringstream content;                   // Buffer for building HTML page
+            
+            content << "<html><body>";                   // Start of HTML
+            content << "<h1>Submitted Messages</h1>";    // Heading
+            content << "<pre>";                          // Preserve spacing
+            content << (file ? file.rdbuf() : std::stringstream("No messages yet.")); // Dump file contents
+            content << "</pre>";
+            content << "</body></html>";
+            
+            HttpResponse res(200, content.str());        // Wrap the content in a valid HTTP response
+            response = res.to_string();
+            
+            send(client_fd, response.c_str(), response.size(), 0); // Send to browser
+            close(client_fd);
+            
+            return; // Exit early (skip file serving)
+}
+
+// Security: prevent directory traversal (e.g., "../etc/passwd")
 
         // Build full path to the requested file
         std::string full_path = ROOT_DIR + (req.path == "/" ? "/index.html" : req.path);
