@@ -358,7 +358,7 @@ private:
 
             // Catch any trailing message without ---
             if (!message.empty()) {
-                content << "<div class='msg'>" << safe_messagemessage << "</div>";}
+                content << "<div class='msg'>" << safe_message << "</div>";}
 
 
 
