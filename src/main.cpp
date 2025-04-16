@@ -349,7 +349,7 @@ private:
                     std::string safe_message = sanitise(message); // sanitise message before output
                     
                     // End of a message wrap and reset
-                    content << "<div class='msg'>" << message << "</div>";
+                    content << "<div class='msg'>" << safe_message << "</div>";
                     message.clear();
                     } else {
                         message += line + "\n";  // Add line to current message
@@ -358,7 +358,8 @@ private:
 
             // Catch any trailing message without ---
             if (!message.empty()) {
-                content << "<div class='msg'>" << message << "</div>";}
+                std::string safe_message = sanitise(message); // sanitise message before output
+                content << "<div class='msg'>" << safe_message << "</div>";}
 
 
 
