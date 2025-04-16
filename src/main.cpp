@@ -344,7 +344,8 @@ private:
             while (std::getline(file, line)) {
                 
                 if (line == "---") {
-                    std::string safe_message = sanitise(message); // sanitise message before output
+                    std::string decoded_message = url_decode(message); 
+                    std::string safe_message = sanitise(decoded_message); // sanitise message before output
                     
                     // End of a message wrap and reset
                     content << "<div class='msg'>" << message << "</div>";
