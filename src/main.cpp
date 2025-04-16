@@ -8,6 +8,7 @@
 #include <sys/socket.h>   // for socket(), bind(), listen(), accept()
 #include "logger.h"
 #include <thread> // for std::thread
+#include "utils.h"
 //#include <chrono> // to simulate a slow response or delay, to test how the server works concurrency 
 
 
@@ -254,7 +255,6 @@ public:
 }
 
 
-
 private:
     int server_fd = -1;
     int port;
@@ -344,12 +344,14 @@ private:
             while (std::getline(file, line)) {
                 
                 if (line == "---") {
-            // End of a message wrap and reset
-            content << "<div class='msg'>" << message << "</div>";
-            message.clear();
-            } else {
-            message += line + "\n";  // Add line to current message
-            }
+                    std::string safe_message = sanitise(message); // sanitise message before output
+                    
+                    // End of a message wrap and reset
+                    content << "<div class='msg'>" << message << "</div>";
+                    message.clear();
+                    } else {
+                        message += line + "\n";  // Add line to current message
+                        }
             }
 
             // Catch any trailing message without ---
