@@ -289,6 +289,7 @@ private:
     
     
     void handle_client(int client_fd) {
+    
     Logger logger("server.log");  // Create a logger for this request/thread
 
     char buffer[4096] = {0};  // Create a buffer to store the client's request
@@ -344,8 +345,8 @@ private:
             while (std::getline(file, line)) {
                 
                 if (line == "---") {
-                    std::string decoded_message = url_decode(message); 
-                    std::string safe_message = sanitise(decoded_message); // sanitise message before output
+                    //std::string decoded_message = url_decode(message); 
+                    std::string safe_message = sanitise(message); // sanitise message before output
                     
                     // End of a message wrap and reset
                     content << "<div class='msg'>" << message << "</div>";
@@ -398,10 +399,11 @@ private:
     
      // Handle POST request for form submission
     else if (req.method == "POST" && req.path == "/submit") {
-        std::string clean_message = decode_form_value(req.body);  // Extract and clean form data
+        std::string raw_message = decode_form_value(req.body);  // Extract and clean form data
+        std::string decoded_message = url_decode(raw_message);           // Decode URL-encoded characters
         std::ofstream file("submissions.txt", std::ios::app);     // Open file in append mode
         if (file) {
-            file << clean_message << "\n---\n";  // Store the message
+            file << decoded_message << "\n---\n";  // Store the message
         }
 
         logger.log(Logger::INFO, "Form submitted with message: " + clean_message);
