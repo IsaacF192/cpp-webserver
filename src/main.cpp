@@ -358,7 +358,7 @@ private:
 
             // Catch any trailing message without ---
             if (!message.empty()) {
-                content << "<div class='msg'>" << message << "</div>";}
+                content << "<div class='msg'>" << safe_messagemessage << "</div>";}
 
 
 
@@ -407,6 +407,7 @@ private:
         }
 
         logger.log(Logger::INFO, "Form submitted with message: " + decoded_message);
+        logger.log(Logger::INFO, "Form submitted with message: " + raw_message);
         HttpResponse res(200, "<h1>Thanks for your submission!</h1>");
         response = res.to_string();
     }
