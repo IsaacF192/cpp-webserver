@@ -406,7 +406,7 @@ private:
             file << decoded_message << "\n---\n";  // Store the message
         }
 
-        logger.log(Logger::INFO, "Form submitted with message: " + clean_message);
+        logger.log(Logger::INFO, "Form submitted with message: " + decoded_message);
         HttpResponse res(200, "<h1>Thanks for your submission!</h1>");
         response = res.to_string();
     }
