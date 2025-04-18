@@ -10,6 +10,7 @@
 #include <thread> // for std::thread
 #include "utils.h"
 #include <mutex> // for std::mutex
+#include "threadpool.h"
 //#include <chrono> // to simulate a slow response or delay, to test how the server works concurrency 
 
 
@@ -220,10 +221,11 @@ public:
         setup_socket();
     }
 
-
-
-
-~HttpServer() {
+    static void handle_client(int client_fd);
+    
+    
+    
+    ~HttpServer() {
         // RAII: automatically close server socket on destruction
         if (server_fd >= 0) {
             close(server_fd);
@@ -238,19 +240,26 @@ public:
         std::cout << "Server listening on port " << port << "..." << std::endl;
         logger.log(Logger::INFO, "Server started on port " + std::to_string(port));
 
+        ThreadPool pool(8);
+        
         while (true){
-    //Accept a new client connection (blocks until a client connects)
-    int client_fd = accept(server_fd, nullptr, nullptr);
+    
+    int client_fd = accept(server_fd, nullptr, nullptr);   //Accept a new client connection (blocks until a client connects)
+
+
     if (client_fd < 0) {
         logger.log(Logger::ERROR, "accept() failed");  // Log failure to accept
         continue;  // Try again
     }
 
+    pool.enqueue(client_fd);
+
+
     //Start a new thread to handle the client
-    std::thread client_thread(&HttpServer::handle_client, this, client_fd);
+    //std::thread client_thread(&HttpServer::handle_client, this, client_fd);
 
     //Detach the thread so it runs independently and cleans up on its own
-    client_thread.detach();
+    //client_thread.detach();
     }
 
 
@@ -289,8 +298,7 @@ private:
     // It's exactly the logic that used to live in the `run()` method.
     // It gets called from a new thread for each client.
     
-    
-    void handle_client(int client_fd) {
+    void HttpServer::handle_client(int client_fd) {
     
     Logger logger("server.log");  // Create a logger for this request/thread
 
@@ -311,16 +319,9 @@ private:
             close(client_fd);
             return;  // Stop processing this request
         }
-
-
-
-
-
-    
-
-    logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
-
-    //std::string response;  // This will hold the final HTTP response
+        
+        
+        logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
 
     
     
