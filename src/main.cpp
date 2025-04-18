@@ -9,9 +9,11 @@
 #include "logger.h"
 #include <thread> // for std::thread
 #include "utils.h"
+#include <mutex> // for std::mutex
 //#include <chrono> // to simulate a slow response or delay, to test how the server works concurrency 
 
 
+std::mutex file_mutex; //this is a global mutex to protect file writes accross threads.
 
 
 const int PORT = 8080;                      // The port number the server will listen on
@@ -402,10 +404,25 @@ private:
     else if (req.method == "POST" && req.path == "/submit") {
         std::string raw_message = decode_form_value(req.body);  // Extract and clean form data
         std::string decoded_message = url_decode(raw_message);           // Decode URL-encoded characters
-        std::ofstream file("submissions.txt", std::ios::app);     // Open file in append mode
+       
+       
+       { // Start a block scope to limit how long the lock is held
+        
+        
+        std::lock_guard<std::mutex> lock(file_mutex); // Lock the mutex to ensure this block is thread-safe.
+                                                      //only one thread can the hole the lock at a time
+                                                      
+        
+        std::ofstream file("submissions.txt", std::ios::app);     // Open file in append mode which mean new messages are added to the end
         if (file) {
-            file << decoded_message << "\n---\n";  // Store the message
+
+            file << decoded_message << "\n---\n";  // Store the message, 
+            // Write the decoded message followed by separator to the file.
+
         }
+        
+        
+        } // The lock is automatically released here when 'lock' goes out of scope
 
         logger.log(Logger::INFO, "Form submitted with message: " + decoded_message);
         logger.log(Logger::INFO, "Form submitted with message: " + raw_message);
