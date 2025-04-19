@@ -3,6 +3,13 @@
 #include "threadpool.h"        // Include the header for function declarations 
 #include <iostream>            // For debug output (optional)
 
+// just a forward declaration for the compiler to know there is a httpclass with a full handle_client method
+class HttpServer {
+public:
+    static void handle_client(int client_fd);
+};
+
+
 // Constructor: initializes the thread pool and starts worker threads
 ThreadPool::ThreadPool(size_t num_threads) : stop(false) {
     // Create the requested number of threads and add them to the vector
@@ -61,6 +68,6 @@ void ThreadPool::clients() {
         }
 
         // Now handle the client outside the lock (so other threads can access the queue)
-        handle_client(client_fd);  // This is my existing request handler
+        HttpServer::handle_client(client_fd);  // This is my existing request handler
     }
 }
