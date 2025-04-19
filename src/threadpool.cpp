@@ -1,7 +1,6 @@
 // threadpool.cpp
 
-#include "threadpool.h"        // Include the header for function declarations
-#include "main.h"              // Include the declaration for handle_client() if needed
+#include "threadpool.h"        // Include the header for function declarations 
 #include <iostream>            // For debug output (optional)
 
 // Constructor: initializes the thread pool and starts worker threads

@@ -221,7 +221,7 @@ public:
         setup_socket();
     }
 
-    static void handle_client(int client_fd);
+static void handle_client(int client_fd);
     
     
     
@@ -294,11 +294,14 @@ private:
     }
     
     
-    // This method handles a single client connection.
-    // It's exactly the logic that used to live in the `run()` method.
-    // It gets called from a new thread for each client.
     
-    void HttpServer::handle_client(int client_fd) {
+};
+
+// This method handles a single client connection.
+// It's exactly the logic that used to live in the `run()` method.
+// It gets called from a new thread for each client.
+
+void HttpServer::handle_client(int client_fd) {
     
     Logger logger("server.log");  // Create a logger for this request/thread
 
@@ -442,9 +445,6 @@ private:
     send(client_fd, response.c_str(), response.size(), 0);
     close(client_fd);  // Always close the client socket after responding
 }
-
-};
-
 
 
 
