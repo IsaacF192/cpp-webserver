@@ -71,8 +71,9 @@ void ThreadPool::clients() {
         // This helps us visually confirm that the thread pool is working correctly,
         // because you'll see the same limited number of thread IDs being reused.
         // Without a thread pool, you'd see a new thread ID for each request.
-        
         std::cout << "[Thread " << std::this_thread::get_id() << "] handling request" << std::endl;
+        std::cout.flush(); 
+
         
         // Now handle the client outside the lock (so other threads can access the queue)
         HttpServer::handle_client(client_fd);  // This is my existing request handler
