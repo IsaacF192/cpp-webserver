@@ -72,7 +72,7 @@ void ThreadPool::clients() {
         // because you'll see the same limited number of thread IDs being reused.
         // Without a thread pool, you'd see a new thread ID for each request.
         std::cout << "[Thread " << std::this_thread::get_id() << "] handling request" << std::endl;
-        std::cout.flush(); 
+        //std::cout.flush(); 
 
         
         // Now handle the client outside the lock (so other threads can access the queue)

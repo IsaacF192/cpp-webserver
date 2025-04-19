@@ -11,8 +11,8 @@
 #include "utils.h"
 #include <mutex> // for std::mutex
 #include "threadpool.h"
-//#include <chrono> // to simulate a slow response or delay, to test how the server works concurrency 
-
+#include <chrono>  // to simulate a slow response or delay, to test how the server works concurrency, also used for precise timestamps
+#include <unordered_map> // to track client request times
 
 std::mutex file_mutex; //this is a global mutex to protect file writes accross threads.
 
@@ -130,12 +130,6 @@ std::string url_decode(const std::string& input) {
 
 
 
-
-
-
-
-
-
 class HttpRequest {
 public:
     std::string method;
@@ -220,8 +214,13 @@ public:
     HttpServer(int port) : port(port) {
         setup_socket();
     }
+    
+    static void handle_client(int client_fd);
+    
+    
+    std::unordered_map<int, std::chrono::steady_clock::time_point> last_request_time;
+    std::mutex throttle_mutex;  // Protect access to the map
 
-static void handle_client(int client_fd);
     
     
     
@@ -243,15 +242,39 @@ static void handle_client(int client_fd);
         ThreadPool pool(8);
         
         while (true){
-    
-    int client_fd = accept(server_fd, nullptr, nullptr);   //Accept a new client connection (blocks until a client connects)
+            
+            int client_fd = accept(server_fd, nullptr, nullptr);   //Accept a new client connection (blocks until a client connects)
 
+           
 
     if (client_fd < 0) {
         logger.log(Logger::ERROR, "accept() failed");  // Log failure to accept
         continue;  // Try again
     }
 
+     {
+                
+                std::lock_guard<std::mutex> lock(throttle_mutex);
+                
+                auto now = std::chrono::steady_clock::now();
+                auto it = last_request_time.find(client_fd);
+                
+                if (it != last_request_time.end()) {
+                    
+                    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count();
+                    
+                    if (elapsed < 1000) { //Limit to 1 request per second
+                    
+                    logger.log(Logger::WARNING, "Request throttled (too frequent)");
+                    close(client_fd);
+                    continue;
+        }
+    }
+
+    last_request_time[client_fd] = now;  // Update last request time
+    
+    }
+    
     pool.enqueue(client_fd);
 
 

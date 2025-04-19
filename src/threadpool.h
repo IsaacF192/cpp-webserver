@@ -19,7 +19,7 @@ public:
 private:
     void clients();                    // Function that each worker thread runs
 
-    std::vector<std::thread> threads; // Vector of worker threads
+    std::vector<std::thread> threads; // Vector of client threads
     std::queue<int> tasks;            // Queue of client connections (fd values)
 
     std::mutex queue_mutex;           // Mutex to protect access to task queue
