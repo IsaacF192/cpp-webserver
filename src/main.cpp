@@ -333,14 +333,56 @@ private:
 void HttpServer::handle_client(int client_fd) {
     
     Logger logger("server.log");  // Create a logger for this request/thread
-
-    char buffer[4096] = {0};  // Create a buffer to store the client's request
-    read(client_fd, buffer, sizeof(buffer));  // Read the raw request from the socket
-
-    HttpRequest req(buffer);           // Parse method, path, body
+    
+    // Create a string to store the full incoming requess
+    std::string request_data;
+    char buffer[1024];  // Use a smaller buffer to read in chunks
+    ssize_t bytes_read;
+    bool complete = false;
+    
+    auto start_time = std::chrono::steady_clock::now();  // Track how long the request is taking
     
     
-    req.path = url_decode(req.path);   // Decode %2E%2E and other encoded path parts
+    while (!complete) {
+        
+        // Read part of the request
+        bytes_read = read(client_fd, buffer, sizeof(buffer));
+
+    if (bytes_read <= 0) {
+        
+        // If read failed or timed out, close the connection
+        logger.log(Logger::WARNING, "Client read timed out or failed");
+        close(client_fd);
+        return;
+    }
+    
+    // Append the new bytes to the full request string
+    request_data.append(buffer, bytes_read);
+
+    // Check if we've reached the end of HTTP headers (\r\n\r\n)
+    if (request_data.find("\r\n\r\n") != std::string::npos) {
+        complete = true;  // Stop reading once headers are complete
+    }
+
+    // extra protection layer
+    auto now = std::chrono::steady_clock::now();             // Total time spent reading the request so far
+    if (std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count() > 10) {
+        logger.log(Logger::WARNING, "Client took too long to complete request");
+
+        // Fail-safe: client is sending too slowly
+        close(client_fd);
+        return;
+    }
+}
+
+// Now that we have a full request, parse it
+HttpRequest req(request_data);  // Safely construct the request
+
+
+
+
+
+req.path = url_decode(req.path);   // Decode %2E%2E and other encoded path parts
     std::string response;  // This will hold the final HTTP response
 
     if (req.path.find("..") != std::string::npos) {
