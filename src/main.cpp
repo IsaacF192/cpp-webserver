@@ -13,6 +13,7 @@
 #include "threadpool.h"
 #include <chrono>  // to simulate a slow response or delay, to test how the server works concurrency, also used for precise timestamps
 #include <unordered_map> // to track client request times
+#include <sys/time.h> // gives acces to struct timeval which is a data structure used in many system calls to represent a time duration
 
 std::mutex file_mutex; //this is a global mutex to protect file writes accross threads.
 
@@ -244,13 +245,18 @@ public:
         while (true){
             
             int client_fd = accept(server_fd, nullptr, nullptr);   //Accept a new client connection (blocks until a client connects)
+            
+            if (client_fd < 0) {
 
-           
-
-    if (client_fd < 0) {
-        logger.log(Logger::ERROR, "accept() failed");  // Log failure to accept
-        continue;  // Try again
-    }
+                logger.log(Logger::ERROR, "accept() failed");  // Log failure to accept
+                continue;  // Try again
+                }
+                 
+                 //adding timeout structure to prevent slow Loris Attack
+                struct timeval timeout;
+                timeout.tv_sec = 5;  // 5 second timeout
+                timeout.tv_usec = 0;
+                setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
 
      {
                 
