@@ -9,14 +9,19 @@
 #include <condition_variable> // For std::condition_variable
 #include <atomic>             // For std::atomic
 
+class HttpServer;             //declaring the class
+
 class ThreadPool {
 public:
-    ThreadPool(size_t num_threads);   // Constructor
+    ThreadPool(size_t num_threads, HttpServer* server);   // Constructor
     ~ThreadPool();                    // Destructor
 
     void enqueue(int client_fd);      // Add new client socket to the queue
 
 private:
+
+HttpServer* server_instance;
+
     void clients();                    // Function that each worker thread runs
 
     std::vector<std::thread> threads; // Vector of client threads

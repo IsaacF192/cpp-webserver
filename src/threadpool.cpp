@@ -6,12 +6,12 @@
 // just a forward declaration for the compiler to know there is a httpclass with a full handle_client method
 class HttpServer {
 public:
-    static void handle_client(int client_fd);
+void handle_client(int client_fd);
 };
 
 
 // Constructor: initializes the thread pool and starts worker threads
-ThreadPool::ThreadPool(size_t num_threads) : stop(false) {
+ThreadPool::ThreadPool(size_t num_threads, HttpServer* server) : stop(false), server_instance(server) {
     // Create the requested number of threads and add them to the vector
     for (size_t i = 0; i < num_threads; ++i) {
         threads.emplace_back([this]() {
@@ -74,8 +74,9 @@ void ThreadPool::clients() {
         std::cout << "[Thread " << std::this_thread::get_id() << "] handling request" << std::endl;
         //std::cout.flush(); 
 
+
         
         // Now handle the client outside the lock (so other threads can access the queue)
-        HttpServer::handle_client(client_fd);  // This is my existing request handler
+        server_instance->handle_client(client_fd);  // This is my existing request handler
     }
 }

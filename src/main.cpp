@@ -240,7 +240,7 @@ public:
         std::cout << "Server listening on port " << port << "..." << std::endl;
         logger.log(Logger::INFO, "Server started on port " + std::to_string(port));
 
-        ThreadPool pool(8);
+        ThreadPool pool(8, this);
         
         while (true){
             
