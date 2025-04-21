@@ -17,14 +17,21 @@ Logger::~Logger() {
 
 // Write a log entry with a timestamp and log level
 void Logger::log(Level level, const std::string& message) {
+
+    // Acquire a lock on the mutex to ensure only one thread can write to the log file at a time
+    std::lock_guard<std::mutex> lock(log_mutex);  
+
+    // Check if the log file is open; if not, exit the function
     if (!logfile.is_open()) return;
 
-    // Get current time
+    // Get the current system time as a time_t object
     std::time_t now = std::time(nullptr);
-    char* timestamp = std::ctime(&now); // e.g. "Mon Apr 8 22:35:00 2025\n"
+
+    // Convert the time_t object to a human-readable string (e.g. "Thu Apr 25 14:05:32 2024")
+    char* timestamp = std::ctime(&now);
     timestamp[strlen(timestamp) - 1] = '\0'; // remove newline character
 
-    // Format: [LEVEL] [TIMESTAMP] message
+    // Write the log entry to the file in the format: [LEVEL] [TIMESTAMP] message
     logfile << "[" << levelToString(level) << "] "
             << "[" << timestamp << "] "
             << message << std::endl;
