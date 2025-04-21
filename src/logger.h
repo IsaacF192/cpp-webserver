@@ -3,6 +3,7 @@
 
 #include <string>
 #include <fstream>
+#include <mutex>  
 
 // Logger class for writing messages to a log file
 class Logger {
@@ -22,12 +23,13 @@ public:
 
     // Write a log message with a given severity level
     void log(Level level, const std::string& message);
+    // Helper method to convert Level enum to a string
+    std::string levelToString(Level level);
 
 private:
     std::ofstream logfile;  // Output stream for log file
-
-    // Helper method to convert Level enum to a string
-    std::string levelToString(Level level);
+    
+    std::mutex log_mutex;  // Protects logfile access from concurrent threads to ensure thread-safe logging
 };
 
 #endif
