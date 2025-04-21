@@ -2,6 +2,7 @@
 #include <ctime>     // for time()
 #include <iostream>  // optional: for debug output
 #include <cstring>   // for strlen()
+#include <mutex>     
 
 // Constructor: open the log file in append mode
 Logger::Logger(const std::string& filename) {
