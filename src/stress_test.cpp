@@ -4,6 +4,10 @@
 #include <curl/curl.h>          // For libcurl HTTP requests
 #include <sstream>              // For building message text
 
+#include <cstdlib>      // for rand()
+#include <ctime>        // for time()
+#include <chrono>       // for durations
+
 // Function that sends a POST request to the server with a custom message
 void send_request(int thread_id) {
     CURL* curl = curl_easy_init();  // Initialize CURL
@@ -40,12 +44,20 @@ void send_request(int thread_id) {
 int main() {
     const int NUM_THREADS = 50;                     // Number of requests to send
     std::vector<std::thread> threads;               // Container to hold thread objects
+    std::srand(std::time(nullptr));                // initialise random seed
 
-    curl_global_init(CURL_GLOBAL_ALL);              // Initialize CURL globally
+    curl_global_init(CURL_GLOBAL_ALL);              // Initialise CURL globally
 
     // Create and launch threads
     for (int i = 0; i < NUM_THREADS; ++i) {
         threads.emplace_back(send_request, i);      // Launch thread and pass thread ID
+
+     // Sleep randomly between 0–300 milliseconds
+    int delay = rand() % 300;
+    std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+
+    CURL* curl = curl_easy_init();
+
     }
 
     // Wait for all threads to finish
