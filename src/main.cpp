@@ -464,8 +464,6 @@ if (strncmp(resolved_path, root_path, strlen(root_path)) != 0) {
 
 // Safe path update request
 req.path = decoded_path;
-
-        req.path = decoded_path;  // Safe to assign now
         
         
         logger.log(Logger::INFO, "Received " + req.method + " request for " + req.path);
