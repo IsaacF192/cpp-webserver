@@ -439,9 +439,15 @@ char root_path[PATH_MAX];
 
 // Resolve actual paths (resolve symlinks, .., etc.)
 if (!realpath(full_path.c_str(), resolved_path)) {
-    logger.log(Logger::ERROR, "Failed to resolve path: " + full_path);
-    HttpResponse res(404, "<h1>404 Not Found</h1>");
-    response = res.to_string();
+    if (decoded_path.find("..") != std::string::npos) {
+        logger.log(Logger::ERROR, "Blocked path traversal attempt (unresolved): " + decoded_path);
+        HttpResponse res(403, "<h1>403 Forbidden</h1>");
+        response = res.to_string();
+    } else {
+        logger.log(Logger::ERROR, "Failed to resolve path: " + full_path);
+        HttpResponse res(404, "<h1>404 Not Found</h1>");
+        response = res.to_string();
+    }
     send(client_fd, response.c_str(), response.size(), 0);
     close(client_fd);
     return;
