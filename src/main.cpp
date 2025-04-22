@@ -14,7 +14,8 @@
 #include <chrono>  // to simulate a slow response or delay, to test how the server works concurrency, also used for precise timestamps
 #include <unordered_map> // to track client request times
 #include <sys/time.h> // gives acces to struct timeval which is a data structure used in many system calls to represent a time duration
-
+#include <limits.h>
+#include <unistd.h>
 std::mutex file_mutex; //this is a global mutex to protect file writes accross threads.
 
 
@@ -426,14 +427,18 @@ HttpRequest req(request_data);  // Safely construct the request
     std::string response;  // This will hold the final HTTP response
 
 
-    std::string decoded_path = url_decode(req.path);  // Decode any encoded path parts
+   // Decode the path first
+std::string decoded_path = url_decode(req.path);
 
-    std::string full_path = ROOT_DIR + (decoded_path == "/" ? "/index.html" : decoded_path);
+// Build the full path based on decoded input
+std::string full_path = ROOT_DIR + (decoded_path == "/" ? "/index.html" : decoded_path);
 
+// Create char arrays for resolved paths
+char resolved_path[PATH_MAX];
+char root_path[PATH_MAX];
 
-   char resolved_path[PATH_MAX];
-   
-   if (realpath(full_path.c_str(), resolved_path) == nullptr) {
+// Resolve actual paths (resolve symlinks, .., etc.)
+if (!realpath(full_path.c_str(), resolved_path)) {
     logger.log(Logger::ERROR, "Failed to resolve path: " + full_path);
     HttpResponse res(404, "<h1>404 Not Found</h1>");
     response = res.to_string();
@@ -442,10 +447,9 @@ HttpRequest req(request_data);  // Safely construct the request
     return;
 }
 
-// Check if resolved_path stays inside ROOT_DIR
-char root_path[PATH_MAX];
 realpath(ROOT_DIR.c_str(), root_path);
 
+// Compare canonical path to root path
 if (strncmp(resolved_path, root_path, strlen(root_path)) != 0) {
     logger.log(Logger::ERROR, "Blocked path traversal attempt: " + decoded_path);
     HttpResponse res(403, "<h1>403 Forbidden</h1>");
