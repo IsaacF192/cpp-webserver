@@ -255,12 +255,7 @@ public:
                 continue;  // Try again
                 }
                  
-                 //adding timeout structure to prevent slow Loris Attack
-                struct timeval timeout;
-                timeout.tv_sec = 5;  // 5 second timeout
-                timeout.tv_usec = 0;
-                setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
-
+                
      {
                 
                 std::lock_guard<std::mutex> lock(throttle_mutex);
