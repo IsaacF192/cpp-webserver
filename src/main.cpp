@@ -299,33 +299,29 @@ public:
 
 
 private:
-    int server_fd = -1;  // File descriptor for the server socket
-    int port;            // Port number the server will listen on
+    int server_fd = -1;
+    int port;
 
-    // Sets up the server socket: create, bind, and listen
     void setup_socket() {
-        // Create a TCP socket (IPv4, stream-based, default protocol)
         server_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (server_fd == 0) {
-            perror("socket failed");  // Print error if socket creation fails
-            exit(EXIT_FAILURE);       // Terminate if socket setup is unsuccessful
+            perror("socket failed");
+            exit(EXIT_FAILURE);
         }
 
-        sockaddr_in address{};                    // Structure to hold server address info
-        address.sin_family = AF_INET;             // Set address family 
-        address.sin_addr.s_addr = INADDR_ANY;     // Accept connections on any network interface
-        address.sin_port = htons(port);           // Convert port to network byte order
+        sockaddr_in address{};
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = INADDR_ANY;
+        address.sin_port = htons(port);
 
-        // Bind the socket to the IP and port
         if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-            perror("bind failed");   // Print error if binding fails
-            exit(EXIT_FAILURE);      // Terminate if unable to bind
+            perror("bind failed");
+            exit(EXIT_FAILURE);
         }
 
-        // Set the socket to listen for incoming connections (max queue size 10)
         if (listen(server_fd, 10) < 0) {
-            perror("listen failed"); // Print error if listen fails
-            exit(EXIT_FAILURE);      // Terminate if socket can't listen
+            perror("listen failed");
+            exit(EXIT_FAILURE);
         }
     }
     
