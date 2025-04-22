@@ -362,7 +362,12 @@ void HttpServer::handle_client(int client_fd) {
         
         // If read failed or timed out, close the connection
         logger.log(Logger::WARNING, "Client read timed out or failed");
-        std::cerr << "[Debug] read() error: " << strerror(errno) << std::endl;
+
+        int err = errno;
+        std::cerr << "[Debug] read() error code: " << err 
+          << " (" << strerror(err) << ")" << std::endl;
+          
+        //std::cerr << "[Debug] read() error: " << strerror(errno) << std::endl;
 
         //std::cout << "[Debug] Read timed out or failed\n";
         close(client_fd);

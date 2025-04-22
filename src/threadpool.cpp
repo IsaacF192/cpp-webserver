@@ -10,7 +10,7 @@ void handle_client(int client_fd);
 };
 
 
-// Constructor: initializes the thread pool and starts worker threads
+// Constructor: initializes the thread pool and starts client threads
 ThreadPool::ThreadPool(size_t num_threads, HttpServer* server) : stop(false), server_instance(server) {
     // Create the requested number of threads and add them to the vector
     for (size_t i = 0; i < num_threads; ++i) {
