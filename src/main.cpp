@@ -18,7 +18,7 @@
 std::mutex file_mutex; //this is a global mutex to protect file writes accross threads.
 
 
-const int PORT = 8080;                      // The port number the server will listen on
+const int PORT = 8000;                      // The port number the server will listen on
 const std::string ROOT_DIR = "./www";       // Root folder to serve files from
 
 // This function builds and returns the full HTTP response based on the requested path
@@ -366,7 +366,7 @@ void HttpServer::handle_client(int client_fd) {
         int err = errno;
         std::cerr << "[Debug] read() error code: " << err 
           << " (" << strerror(err) << ")" << std::endl;
-          
+
         //std::cerr << "[Debug] read() error: " << strerror(errno) << std::endl;
 
         //std::cout << "[Debug] Read timed out or failed\n";
@@ -558,7 +558,7 @@ req.path = url_decode(req.path);   // Decode %2E%2E and other encoded path parts
 
 int main() {
 
-    HttpServer server(8080);  // Create server on port 8080
+    HttpServer server(8000);  // Create server on port 8080
     server.run();             // Start accepting requests
     return 0;
 
