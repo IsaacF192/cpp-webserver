@@ -281,6 +281,8 @@ public:
     
     pool.enqueue(client_fd);
 
+    std::cout << "[Debug] Enqueued client_fd " << client_fd << std::endl;
+
 
     //Start a new thread to handle the client
     //std::thread client_thread(&HttpServer::handle_client, this, client_fd);
