@@ -335,7 +335,7 @@ private:
 // It's exactly the logic that used to live in the `run()` method.
 // It gets called from a new thread for each client.
 
-void HttpServer::handle_client(int client_fd) {
+void handle_client(int client_fd) {
     
     Logger logger("server.log");  // Create a logger for this request/thread
 

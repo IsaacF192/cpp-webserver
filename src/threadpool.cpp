@@ -2,6 +2,7 @@
 
 #include "threadpool.h"        // Include the header for function declarations 
 #include <iostream>            // For debug output (optional)
+extern void handle_client(int client_fd);
 
 // just a forward declaration for the compiler to know there is a httpclass with a full handle_client method
 class HttpServer {
@@ -79,6 +80,6 @@ void ThreadPool::clients() {
 
         
         // Now handle the client outside the lock (so other threads can access the queue)
-        server_instance->handle_client(client_fd);  // This is my existing request handler
+        handle_client(client_fd);  // This is my existing request handler
     }
 }
