@@ -422,8 +422,9 @@ HttpRequest req(request_data);  // Safely construct the request
     //req.path = url_decode(req.path);   // Decode %2E%2E and other encoded path parts
     //std::string response;  // This will hold the final HTTP response
 
-    std::string decoded_path = url_decode(req.path);  // Decode any encoded path parts
+    
     std::string response;  // This will hold the final HTTP response
+    std::string decoded_path = url_decode(req.path);  // Decode any encoded path parts
 
     if (decoded_path.find("..") != std::string::npos) {
             logger.log(Logger::ERROR, "Blocked path traversal attempt: " + decoded_path);
