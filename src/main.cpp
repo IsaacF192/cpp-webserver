@@ -425,8 +425,8 @@ HttpRequest req(request_data);  // Safely construct the request
     std::string decoded_path = url_decode(req.path);  // Decode any encoded path parts
     std::string response;  // This will hold the final HTTP response
 
-    if (req.path.find("..") != std::string::npos) {
-            logger.log(Logger::ERROR, "Blocked path traversal attempt: " + req.path);
+    if (decoded_path.find("..") != std::string::npos) {
+            logger.log(Logger::ERROR, "Blocked path traversal attempt: " + decoded_path);
             HttpResponse res(403, "<h1>403 Forbidden</h1>");
             response = res.to_string();
             send(client_fd, response.c_str(), response.size(), 0);
