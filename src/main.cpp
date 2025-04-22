@@ -257,7 +257,7 @@ public:
                  
                  //adding timeout structure to prevent slow Loris Attack
                 struct timeval timeout;
-                timeout.tv_sec = 5;  // 5 second timeout
+                timeout.tv_sec = 10;  // 5 second timeout
                 timeout.tv_usec = 0;
                 setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
 
@@ -381,10 +381,17 @@ void HttpServer::handle_client(int client_fd) {
     }
 }
 
+if (request_data.empty()) {
+    logger.log(Logger::WARNING, "Empty or incomplete request");
+    HttpResponse res(400, "<h1>400 Bad Request</h1>");
+    std::string response = res.to_string();
+    send(client_fd, response.c_str(), response.size(), 0);
+    close(client_fd);
+    return;
+}
+
 // Now that we have a full request, parse it
 HttpRequest req(request_data);  // Safely construct the request
-
-
 
 
 
