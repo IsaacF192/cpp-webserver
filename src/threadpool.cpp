@@ -2,8 +2,12 @@
 
 #include "threadpool.h"        // Include the header for function declarations 
 #include <iostream>            // For debug output (optional)
-#include "main.cpp"
+
 // just a forward declaration for the compiler to know there is a httpclass with a full handle_client method
+class HttpServer {
+public:
+void handle_client(int client_fd);
+};
 
 
 // Constructor: initializes the thread pool and starts client threads
