@@ -257,7 +257,7 @@ public:
                  
                  //adding timeout structure to prevent slow Loris Attack
                 struct timeval timeout;
-                timeout.tv_sec = 10;  // 5 second timeout
+                timeout.tv_sec = 5;  // 5 second timeout
                 timeout.tv_usec = 0;
                 setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
 
@@ -336,6 +336,13 @@ private:
 void HttpServer::handle_client(int client_fd) {
     
     Logger logger("server.log");  // Create a logger for this request/thread
+
+    std::cout << "[Debug] handle_client() started\n";
+
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+    setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
     
     // Create a string to store the full incoming requess
     std::string request_data;
@@ -350,12 +357,16 @@ void HttpServer::handle_client(int client_fd) {
         
         // Read part of the request
         bytes_read = read(client_fd, buffer, sizeof(buffer));
+        std::cout << "[Debug] Bytes read: " << bytes_read << std::endl;
 
     if (bytes_read <= 0) {
         
         // If read failed or timed out, close the connection
         logger.log(Logger::WARNING, "Client read timed out or failed");
+
+        std::cout << "[Debug] Read timed out or failed\n";
         close(client_fd);
+
         return;
     }
     
@@ -367,6 +378,7 @@ void HttpServer::handle_client(int client_fd) {
 
     // Check if we've reached the end of HTTP headers (\r\n\r\n)
     if (request_data.find("\r\n\r\n") != std::string::npos) {
+        std::cout << "[Debug] End of headers found\n";
         complete = true;  // Stop reading once headers are complete
     }
 
@@ -374,6 +386,8 @@ void HttpServer::handle_client(int client_fd) {
     auto now = std::chrono::steady_clock::now();             // Total time spent reading the request so far
     if (std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count() > 10) {
         logger.log(Logger::WARNING, "Client took too long to complete request");
+
+        std::cout << "[Debug] Client took too long\n";
 
         // Fail-safe: client is sending too slowly
         close(client_fd);
@@ -383,12 +397,17 @@ void HttpServer::handle_client(int client_fd) {
 
 if (request_data.empty()) {
     logger.log(Logger::WARNING, "Empty or incomplete request");
+
+    std::cout << "[Debug] Request was empty\n";
+
     HttpResponse res(400, "<h1>400 Bad Request</h1>");
     std::string response = res.to_string();
     send(client_fd, response.c_str(), response.size(), 0);
     close(client_fd);
     return;
 }
+
+std::cout << "[Debug] Creating HttpRequest object\n";
 
 // Now that we have a full request, parse it
 HttpRequest req(request_data);  // Safely construct the request
