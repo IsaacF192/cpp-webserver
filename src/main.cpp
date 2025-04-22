@@ -429,22 +429,21 @@ HttpRequest req(request_data);  // Safely construct the request
 
    // Decode the path first
 std::string decoded_path = url_decode(req.path);
-
-// Build the full path based on decoded input
 std::string full_path = ROOT_DIR + (decoded_path == "/" ? "/index.html" : decoded_path);
 
-// Create char arrays for resolved paths
 char resolved_path[PATH_MAX];
 char root_path[PATH_MAX];
+realpath(ROOT_DIR.c_str(), root_path);
 
-// Resolve actual paths (resolve symlinks, .., etc.)
+// Try to resolve the requested file path
 if (!realpath(full_path.c_str(), resolved_path)) {
+    // If resolution fails AND the decoded path has traversal
     if (decoded_path.find("..") != std::string::npos) {
-        logger.log(Logger::ERROR, "Blocked path traversal attempt (unresolved): " + decoded_path);
+        logger.log(Logger::ERROR, "Blocked traversal (unresolved): " + decoded_path);
         HttpResponse res(403, "<h1>403 Forbidden</h1>");
         response = res.to_string();
     } else {
-        logger.log(Logger::ERROR, "Failed to resolve path: " + full_path);
+        logger.log(Logger::ERROR, "File not found or unresolved: " + full_path);
         HttpResponse res(404, "<h1>404 Not Found</h1>");
         response = res.to_string();
     }
@@ -453,17 +452,18 @@ if (!realpath(full_path.c_str(), resolved_path)) {
     return;
 }
 
-realpath(ROOT_DIR.c_str(), root_path);
-
-// Compare canonical path to root path
+//Confirm resolved path is still inside ROOT_DIR
 if (strncmp(resolved_path, root_path, strlen(root_path)) != 0) {
-    logger.log(Logger::ERROR, "Blocked path traversal attempt: " + decoded_path);
+    logger.log(Logger::ERROR, "Blocked traversal: " + decoded_path);
     HttpResponse res(403, "<h1>403 Forbidden</h1>");
     response = res.to_string();
     send(client_fd, response.c_str(), response.size(), 0);
     close(client_fd);
     return;
 }
+
+// Safe path update request
+req.path = decoded_path;
 
         req.path = decoded_path;  // Safe to assign now
         
