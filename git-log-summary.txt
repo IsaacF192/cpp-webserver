@@ -1,0 +1,49 @@
+cf05d15 | 2025-04-21 | modified stress_test
+4c3bc0f | 2025-04-21 | re-adjusted std::mutex vatiables
+10f289f | 2025-04-21 | re-adjusted std::mutex vatiables
+a11d016 | 2025-04-21 | adjusted the thread-safe logging using std::mutex to ensure clean concurrent writes
+8fd2043 | 2025-04-21 | adjusted the thread-safe logging using std::mutex to ensure clean concurrent writes
+69c4af3 | 2025-04-20 | added a timeout struture to prevent slow Loris Attck
+0bff719 | 2025-04-20 | added a timeout struture to prevent slow Loris Attck
+f81127d | 2025-04-19 | Throttling code added
+b0e55d4 | 2025-04-19 | line of code to show the thread ID for each thread
+98c0bee | 2025-04-19 | line of code to show the thread ID for each thread
+9ee993c | 2025-04-19 | fixing the code to work the threadpool
+7c37baf | 2025-04-19 | Added threadpool classes and functions
+94a1822 | 2025-04-19 | Added threadpool classes and functions
+1a5227c | 2025-04-18 | added a stress test file, adjusted the view in html
+daf0252 | 2025-04-18 | added a stress test file
+fa8c88b | 2025-04-18 | added file write lcoking
+36cd7ce | 2025-04-16 | decoded the sanitisation message
+40edd93 | 2025-04-16 | decoded the sanitisation message
+a67332a | 2025-04-16 | decoded the sanitisation message
+995e0e1 | 2025-04-16 | decoded the sanitisation message
+1f61661 | 2025-04-16 | decoded the sanitisation message
+fe68ca5 | 2025-04-16 | decoded the sanitisation message
+ceafae2 | 2025-04-16 | decoded the sanitisation message
+b86d066 | 2025-04-16 | added sanitisation correction
+404f3b1 | 2025-04-16 | added sanitisation correction
+a2ae02c | 2025-04-16 | added sanitisation files and updated the main.cpp file
+be58f39 | 2025-04-15 | fixed few mistakes
+644f6b5 | 2025-04-15 | added css code to make the view for messages.html look abit better
+c53b6d3 | 2025-04-15 | tweaked mistakes to view the submissons.txt file
+896291c | 2025-04-15 | added support to view the submitted messages
+6eddeca | 2025-04-15 | declared the response method
+89597ef | 2025-04-15 | added universal path traversal rotection before request method check
+b62832f | 2025-04-14 | removed chrono to simulate slow processing
+13a5afd | 2025-04-14 | added chrono to simulate slow processing
+95272cc | 2025-04-14 | Refactored server to use multithreading with handle_client()
+e30eef1 | 2025-04-14 | Refactored server to use multithreading with handle_client()
+46ea99d | 2025-04-14 | cleaned the main() fincion
+0a6a3eb | 2025-04-14 | Added URL decoding to request path and validate against encoded traversal attempts
+cef2d96 | 2025-04-13 | Add input validation to block path traversal attempts
+702c829 | 2025-04-10 | Added httpserver class, and updated the main() class to use the class
+28f9d30 | 2025-04-10 | Add Logger class with header and implementation
+8c4dd22 | 2025-04-10 | added logger module files
+cc10aa1 | 2025-04-10 | Removed .DS_Store and added it to .gitignore
+7c3f6eb | 2025-04-09 | Added http response classes and cleaned the code
+44a777f | 2025-04-09 | Added http response classes and cleaned the code
+b48f7d6 | 2025-04-09 | Added post handling and for submission
+2de2294 | 2025-04-09 | Added post handling and for submission
+08f1f49 | 2025-04-09 | Added inline comments for learning and documentation
+48a9009 | 2025-04-08 | initial commit

@@ -4,7 +4,7 @@
 // Function to sanitise a string for HTML output
 // This helps prevent cross-site scripting (XSS) by escaping HTML characters
 std::string sanitise(const std::string& input) {
-    std::string safe;  // This will store the sanitized result
+    std::string safe;  // This will store the sanitised result
 
     // Loop through each character in the input string
     for (char c : input) {

@@ -79,19 +79,22 @@ std::string parse_request_path(const std::string& request, std::string& method, 
 }
 
 
+// Extracts the value of the "message" parameter from the POST body
 std::string decode_form_value(const std::string& body) {
-    std::string key = "message=";
-    size_t pos = body.find(key);
-    if (pos == std::string::npos) return "[empty]";
+    std::string key = "message=";                    //define the key we're looking for
+    size_t pos = body.find(key);                     //search for message= in the post body
+    if (pos == std::string::npos) return "[empty]";  // if not found, return an empty string
 
-    std::string value = body.substr(pos + key.length());
+    std::string value = body.substr(pos + key.length());   //extract the value after message
+    
 
-    // Replace '+' with space (basic decoding)
+    //loop through each character in the value 
+    // Replace '+' with space, '+' represents spaces in URL-encoded form data
     for (size_t i = 0; i < value.length(); ++i) {
         if (value[i] == '+') value[i] = ' ';
     }
 
-    return value;
+    return value; //return clean value
 }
 
 
@@ -296,29 +299,33 @@ public:
 
 
 private:
-    int server_fd = -1;
-    int port;
+    int server_fd = -1;  // File descriptor for the server socket
+    int port;            // Port number the server will listen on
 
+    // Sets up the server socket: create, bind, and listen
     void setup_socket() {
+        // Create a TCP socket (IPv4, stream-based, default protocol)
         server_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (server_fd == 0) {
-            perror("socket failed");
-            exit(EXIT_FAILURE);
+            perror("socket failed");  // Print error if socket creation fails
+            exit(EXIT_FAILURE);       // Terminate if socket setup is unsuccessful
         }
 
-        sockaddr_in address{};
-        address.sin_family = AF_INET;
-        address.sin_addr.s_addr = INADDR_ANY;
-        address.sin_port = htons(port);
+        sockaddr_in address{};                    // Structure to hold server address info
+        address.sin_family = AF_INET;             // Set address family 
+        address.sin_addr.s_addr = INADDR_ANY;     // Accept connections on any network interface
+        address.sin_port = htons(port);           // Convert port to network byte order
 
+        // Bind the socket to the IP and port
         if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-            perror("bind failed");
-            exit(EXIT_FAILURE);
+            perror("bind failed");   // Print error if binding fails
+            exit(EXIT_FAILURE);      // Terminate if unable to bind
         }
 
+        // Set the socket to listen for incoming connections (max queue size 10)
         if (listen(server_fd, 10) < 0) {
-            perror("listen failed");
-            exit(EXIT_FAILURE);
+            perror("listen failed"); // Print error if listen fails
+            exit(EXIT_FAILURE);      // Terminate if socket can't listen
         }
     }
     
@@ -487,8 +494,8 @@ req.path = url_decode(req.path);   // Decode %2E%2E and other encoded path parts
         std::lock_guard<std::mutex> lock(file_mutex); // Lock the mutex to ensure this block is thread-safe.
                                                       //only one thread can the hole the lock at a time
                                                       
-        
-        std::ofstream file("submissions.txt", std::ios::app);     // Open file in append mode which mean new messages are added to the end
+        // Open file in append mode which mean new messages are added to the end
+        std::ofstream file("submissions.txt", std::ios::app);     
         if (file) {
 
             file << decoded_message << "\n---\n";  // Store the message, 
