@@ -254,6 +254,11 @@ public:
                 logger.log(Logger::ERROR, "accept() failed");  // Log failure to accept
                 continue;  // Try again
                 }
+                
+                struct timeval timeout;
+                timeout.tv_sec = 10;
+                timeout.tv_usec = 0;
+                setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
                  
                 
      {
@@ -336,10 +341,7 @@ void HttpServer::handle_client(int client_fd) {
 
     std::cout << "[Debug] handle_client() started\n";
 
-    struct timeval timeout;
-    timeout.tv_sec = 10;
-    timeout.tv_usec = 0;
-    setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+   
     
     // Create a string to store the full incoming requess
     std::string request_data;
