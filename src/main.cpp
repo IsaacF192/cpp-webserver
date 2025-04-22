@@ -428,7 +428,7 @@ HttpRequest req(request_data);  // Safely construct the request
     if (req.path.find("..") != std::string::npos) {
             logger.log(Logger::ERROR, "Blocked path traversal attempt: " + req.path);
             HttpResponse res(403, "<h1>403 Forbidden</h1>");
-            std::response = res.to_string();
+            response = res.to_string();
             send(client_fd, response.c_str(), response.size(), 0);
             close(client_fd);
             return;  // Stop processing this request
