@@ -362,6 +362,9 @@ void HttpServer::handle_client(int client_fd) {
     // Append the new bytes to the full request string
     request_data.append(buffer, bytes_read);
 
+    //Debug: Print what has been received so far
+    std::cout << "Partial request so far:\n" << request_data << std::endl;
+
     // Check if we've reached the end of HTTP headers (\r\n\r\n)
     if (request_data.find("\r\n\r\n") != std::string::npos) {
         complete = true;  // Stop reading once headers are complete
